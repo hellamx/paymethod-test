@@ -1,0 +1,52 @@
+services:
+  php:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: php
+    restart: always
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+    networks:
+      - paymethod_network
+
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
+    container_name: nginx
+    restart: always
+    ports:
+      - "8083:80"
+    volumes:
+      - ./:/var/www/
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+    depends_on:
+      - php
+    networks:
+      - paymethod_network
+
+  db:
+    image: mariadb:10.6
+    container_name: db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: dev
+      MYSQL_USER: dev
+      MYSQL_PASSWORD: dev
+      MYSQL_ROOT_PASSWORD: dev
+    volumes:
+      - dbdata:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - paymethod_network
+
+volumes:
+  dbdata:
+    driver: local
+
+networks:
+  paymethod_network:
+    driver: bridge
