@@ -39,13 +39,6 @@ class PaymentController extends Controller
 
     public function payHook(Request $request)
     {
-        // Проверяем, что пришел XML
-        if (!$request->isXml()) {
-            return response()->json([
-                'error' => 'Expected XML content'
-            ], 400);
-        }
-
         // Получаем содержимое запроса
         $xmlContent = $request->getContent();
 
