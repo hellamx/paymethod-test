@@ -20,7 +20,7 @@ class PaymentController extends Controller
             'Оплата заказа #1001'
         );
 
-        file_put_contents('test_' , time() . '.json', json_encode($result));
+        file_put_contents('test_' . time() . '.json', json_encode($result));
 
         if ($url) {
             // редирект на платёжную страницу
