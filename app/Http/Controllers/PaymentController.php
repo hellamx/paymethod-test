@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Services\PaygineService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use SimpleXMLElement;
 
 class PaymentController extends Controller
 {
@@ -30,8 +32,90 @@ class PaymentController extends Controller
         return response()->json(['error' => 'Не удалось зарегистрировать заказ']);
     }
 
-    public function payHook(Request $request) {
+/*    public function payHook(Request $request) {
         file_put_contents('hook_data' . time() . '.json', json_encode($request->all()));
         file_put_contents('hook_headers' . time() . '.json', json_encode($request->headers));
+    }*/
+
+    public function payHook(Request $request)
+    {
+        // Проверяем, что пришел XML
+        if (!$request->isXml()) {
+            return response()->json([
+                'error' => 'Expected XML content'
+            ], 400);
+        }
+
+        // Получаем содержимое запроса
+        $xmlContent = $request->getContent();
+
+        try {
+            // Парсим XML
+            $xml = new SimpleXMLElement($xmlContent);
+
+            // Конвертируем в массив
+            $data = $this->simpleXmlToArray($xml);
+
+            // Сохраняем в JSON файл
+            $filename = 'hook_data_' . now()->format('Y-m-d_H-i-s') . '.json';
+            $filePath = storage_path('app/xml_parsed/' . $filename);
+
+            // Создаем директорию если не существует
+            if (!file_exists(dirname($filePath))) {
+                mkdir(dirname($filePath), 0755, true);
+            }
+
+            // Сохраняем как JSON
+            file_put_contents($filePath, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'XML successfully parsed and saved as JSON',
+                'data' => $data,
+                'file_path' => $filePath
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('XML parsing error: ' . $e->getMessage());
+
+            return response()->json([
+                'error' => 'Invalid XML format',
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
+     * Конвертирует SimpleXML объект в массив
+     */
+    private function simpleXmlToArray($xml): array
+    {
+        $array = json_decode(json_encode((array) $xml), true);
+
+        // Рекурсивно очищаем массив от пустых значений
+        return array_map(function ($value) {
+            if (is_array($value)) {
+                return $this->cleanArray($value);
+            }
+            return $value;
+        }, $array);
+    }
+
+    /**
+     * Очищает массив от пустых значений
+     */
+    private function cleanArray(array $array): array
+    {
+        foreach ($array as $key => $value) {
+            if (is_array($value)) {
+                $array[$key] = $this->cleanArray($value);
+            }
+
+            if ($value === null || $value === '' || (is_array($value) && empty($value))) {
+                unset($array[$key]);
+            }
+        }
+
+        return $array;
     }
 }
