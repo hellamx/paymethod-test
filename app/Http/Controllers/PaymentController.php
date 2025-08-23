@@ -31,7 +31,7 @@ class PaymentController extends Controller
     }
 
     public function payHook(Request $request) {
-        file_put_contents('hook_data' , time() . '.json', json_encode($request->all()));
-        file_put_contents('hook_headers' , time() . '.json', json_encode($request->headers));
+        file_put_contents('hook_data' . time() . '.json', json_encode($request->all()));
+        file_put_contents('hook_headers' . time() . '.json', json_encode($request->headers));
     }
 }
