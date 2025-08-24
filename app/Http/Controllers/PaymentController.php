@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\PaygineService;
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use SimpleXMLElement;
@@ -32,10 +33,21 @@ class PaymentController extends Controller
         return response()->json(['error' => 'Не удалось зарегистрировать заказ']);
     }
 
-/*    public function payHook(Request $request) {
-        file_put_contents('hook_data' . time() . '.json', json_encode($request->all()));
-        file_put_contents('hook_headers' . time() . '.json', json_encode($request->headers));
-    }*/
+    public function payBySbp(Request $request, PaygineService $paygineService)
+    {
+        [$result, $url] = $paygineService->registerOrderViaSbp(
+            10000, // 100.00 руб
+            643, // RUB
+            'Оплата заказа #1001'
+        );
+
+        if ($url) {
+            // редирект на платёжную страницу
+            return redirect($url);
+        }
+
+        return response()->json(['error' => 'Не удалось зарегистрировать заказ']);
+    }
 
     public function payHook(Request $request)
     {
@@ -110,5 +122,51 @@ class PaymentController extends Controller
         }
 
         return $array;
+    }
+
+    public function payByPlate(Request $request, PaygineService $paygineService)
+    {
+        [$result, $url] = $paygineService->registerOrderViaPlate(
+            10000, // 100.00 руб
+            643, // RUB
+            'Оплата заказа #1001'
+        );
+
+        if ($url) {
+            // редирект на платёжную страницу
+            return redirect($url);
+        }
+
+        return response()->json(['error' => 'Не удалось зарегистрировать заказ']);
+    }
+
+    public function testPaySbp(int $sbpId, int $orderId)
+    {
+
+       /* $client = new Client([
+            'base_uri' => 'https://test.paygine.com',
+            'verify' => false, // отключаем SSL check в тесте
+        ]);
+
+        $str = config('paygine.sector') . 150 . $sbpId . $orderId . config('paygine.password');
+
+        $sha256Hex = hash('sha256', $str);
+
+        $signature = base64_encode($sha256Hex);
+
+        $response = $client->post('test/SBPTestCase', [
+            'form_params' => [
+                'sector' => config('paygine.sector'),
+                'case_id' => 150,
+                'qrc_id' => $sbpId,
+                'order_id' => $orderId,
+                'signature' => $signature
+            ]
+        ]);
+
+        $responseDecoded = simplexml_load_string($response->getBody());
+
+        dd($responseDecoded);*/
+
     }
 }

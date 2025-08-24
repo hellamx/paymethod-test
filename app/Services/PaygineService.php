@@ -97,4 +97,123 @@ class PaygineService
 
         return [simplexml_load_string((string) $response->getBody()), $urlToRedirect];
     }
+
+    public function registerOrderViaSbp(
+        int $amount,
+        int $currency = 643,
+        string $description = '',
+    )
+    {
+        $signature = $this->generateSignature($amount, $currency);
+        $reference = mb_strtoupper(Str::random()) . rand(1, 100000000);
+
+        $data = [
+            'sector'      => (int) $this->sector,
+            'amount'      => $amount, // копейки (10000 = 100 руб)
+            'currency'    => $currency,
+            'description' => $description,
+            'reference'   => $reference,
+            'signature'   => $signature,
+            'url'         => config('paygine.success_url'),
+            'failurl'     => config('paygine.fail_url'),
+            'notify_url'  => config('paygine.notify_url'),
+        ];
+
+        $response = $this->client->post('Register', [
+            'form_params' => $data
+        ]);
+
+        $responseDecoded = simplexml_load_string($response->getBody());
+
+        $id = (int) $responseDecoded->id ?? null;
+        $urlToRedirect = null;
+
+        if (null !== $id) {
+            // PurchaseSBPQRLink
+
+            $response = $this->client->post('PurchaseSBPQRLink', [
+                'form_params' => [
+                    'sector' => $this->sector,
+                    'id'     => $id,
+                    'signature' => $this->generateSignatureToPay($id)
+                ]
+            ]);
+
+            $responseLinkDecoded = simplexml_load_string($response->getBody());
+
+            $sbpId = $responseLinkDecoded->data->sbpOperationId ?? null;
+            $urlToRedirect = $responseLinkDecoded->data->nspkLink ?? null;
+
+            file_put_contents('sbp_id_' . $sbpId . '.txt', $sbpId);
+
+            /*  $urlToRedirect = sprintf(
+                  'https://test.paygine.com/webapi/PurchaseSBP?sector=%s&id=%s&signature=%s',
+                  $this->sector,
+                  $id,
+                  $this->generateSignatureToPay($id)
+              );*/
+        }
+
+        return [simplexml_load_string((string) $response->getBody()), $urlToRedirect];
+    }
+
+    public function registerOrderViaPlate(
+        int $amount,
+        int $currency = 643
+    )
+    {
+        $signature = $this->generateSignature($amount, $currency);
+        $reference = mb_strtoupper(Str::random()) . rand(1, 100000000);
+
+        $data = [
+            'sector'      => (int) $this->sector,
+            'amount'      => $amount, // копейки (10000 = 100 руб)
+            'currency'    => $currency,
+            'description' => 'test',
+            'reference'   => $reference,
+            'address' => 'Москва, ул. Широкая, д. 2, кв. 36',
+            'signature'   => $signature,
+            'url'         => config('paygine.success_url'),
+            'failurl'     => config('paygine.fail_url'),
+            'notify_url'  => config('paygine.notify_url'),
+        ];
+
+        $response = $this->client->post('Register', [
+            'form_params' => $data
+        ]);
+
+        $responseDecoded = simplexml_load_string($response->getBody());
+
+        $id = (int) $responseDecoded->id ?? null;
+        $urlToRedirect = null;
+
+        if (null !== $id) {
+            $shopCart = [
+                "name" => "Брюки мужские FILA",
+                "goodCost" => 100.0,
+                "quantityGoods" => "1",
+            ];
+
+            $shopCartDecoded = base64_encode(json_encode($shopCart));
+
+            $sector   = (string) $this->sector;
+            $password = (string) $this->password;
+
+            $str = $sector . $id . $shopCartDecoded . $password;
+
+            $sha256Hex = hash('sha256', $str);
+
+            $signature = base64_encode($sha256Hex);
+
+            $urlToRedirect = sprintf(
+                'https://test.paygine.com/webapi/custom/svkb/PurchaseWithInstallment?sector_id=%s&id=%s&shop_cart=%s&signature=%s',
+                $this->sector,
+                $id,
+                $shopCartDecoded,
+                $signature,
+            );
+        }
+
+        return [simplexml_load_string((string) $response->getBody()), $urlToRedirect];
+    }
 }
