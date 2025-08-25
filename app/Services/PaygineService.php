@@ -189,9 +189,11 @@ class PaygineService
 
         if (null !== $id) {
             $shopCart = [
-                "name" => "Брюки мужские FILA",
-                "goodCost" => 100.0,
-                "quantityGoods" => "1",
+                [
+                    "name" => "Брюки мужские FILA",
+                    "goodCost" => 100.00,
+                    "quantityGoods" => "1",
+                ]
             ];
 
             $shopCartDecoded = base64_encode(json_encode($shopCart));
@@ -205,8 +207,9 @@ class PaygineService
 
             $signature = base64_encode($sha256Hex);
 
+            // todo: попробовать поменять местами - сигнатуру вперед
             $urlToRedirect = sprintf(
-                'https://test.paygine.com/webapi/custom/svkb/PurchaseWithInstallment?sector_id=%s&id=%s&shop_cart=%s&signature=%s',
+                'https://test.paygine.com/webapi/custom/svkb/PurchaseWithInstallment?sector=%s&id=%s&shop_cart=%s&signature=%s',
                 $this->sector,
                 $id,
                 $shopCartDecoded,
