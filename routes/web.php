@@ -11,4 +11,4 @@ Route::post('/pay-by-plate', [PaymentController::class, 'payByPlate'])->name('pa
 
 
 // TODO
-Route::get('/testPaySbp/{sbpId}/{orderId}', [PaymentController::class, 'testPaySbp']);
+Route::get('/testPaySbp/{orderId}', [PaymentController::class, 'testPaySbp']);

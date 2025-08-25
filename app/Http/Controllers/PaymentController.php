@@ -140,15 +140,14 @@ class PaymentController extends Controller
         return response()->json(['error' => 'Не удалось зарегистрировать заказ']);
     }
 
-    public function testPaySbp(int $sbpId, int $orderId)
+    public function testPaySbp(string $orderId)
     {
-
-       /* $client = new Client([
+        $client = new Client([
             'base_uri' => 'https://test.paygine.com',
             'verify' => false, // отключаем SSL check в тесте
         ]);
 
-        $str = config('paygine.sector') . 150 . $sbpId . $orderId . config('paygine.password');
+        $str = config('paygine.sector') . 150  . $orderId . config('paygine.password');
 
         $sha256Hex = hash('sha256', $str);
 
@@ -158,7 +157,6 @@ class PaymentController extends Controller
             'form_params' => [
                 'sector' => config('paygine.sector'),
                 'case_id' => 150,
-                'qrc_id' => $sbpId,
                 'order_id' => $orderId,
                 'signature' => $signature
             ]
@@ -166,7 +164,7 @@ class PaymentController extends Controller
 
         $responseDecoded = simplexml_load_string($response->getBody());
 
-        dd($responseDecoded);*/
+        dd($responseDecoded);
 
     }
 }
