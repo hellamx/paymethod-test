@@ -21,9 +21,16 @@
                     <input type="submit" value="Pay">
                 </form>
             </div>
-            <div class="sbp">
+            <div class="installment">
                 <h1>Payment by installment (plate)</h1>
                 <form method="post" action="{{ route('payment.plate') }}">
+                    @csrf
+                    <input type="submit" value="Pay">
+                </form>
+            </div>
+            <div class="credit">
+                <h1>Payment by credit</h1>
+                <form method="post" action="{{ route('payment.credit') }}">
                     @csrf
                     <input type="submit" value="Pay">
                 </form>

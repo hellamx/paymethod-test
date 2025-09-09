@@ -167,4 +167,20 @@ class PaymentController extends Controller
         dd($responseDecoded);
 
     }
+
+    public function payByCredit(Request $request, PaygineService $paygineService)
+    {
+        [$result, $url] = $paygineService->registerOrderViaCredit(
+            10000, // 100.00 руб
+            643, // RUB
+            'Оплата заказа #1001'
+        );
+
+        if ($url) {
+            // редирект на платёжную страницу
+            return redirect($url);
+        }
+
+        return response()->json(['error' => 'Не удалось зарегистрировать заказ']);
+    }
 }

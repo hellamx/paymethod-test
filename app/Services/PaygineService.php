@@ -219,4 +219,56 @@ class PaygineService
 
         return [simplexml_load_string((string) $response->getBody()), $urlToRedirect];
     }
+
+    public function registerOrderViaCredit(
+        int $amount,
+        int $currency = 643
+    )
+    {
+        $signature = $this->generateSignature($amount, $currency);
+        $reference = mb_strtoupper(Str::random()) . rand(1, 100000000);
+
+        $data = [
+            'sector'      => (int) $this->sector,
+            'amount'      => $amount, // копейки (10000 = 100 руб)
+            'currency'    => $currency,
+            'description' => 'test',
+            'reference'   => $reference,
+            'address' => 'Москва, ул. Широкая, д. 2, кв. 36',
+            'signature'   => $signature,
+            'url'         => config('paygine.success_url'),
+            'failurl'     => config('paygine.fail_url'),
+            'notify_url'  => config('paygine.notify_url'),
+        ];
+
+        $response = $this->client->post('Register', [
+            'form_params' => $data
+        ]);
+
+        $responseDecoded = simplexml_load_string($response->getBody());
+
+        $id = (int) $responseDecoded->id ?? null;
+        $urlToRedirect = null;
+
+        if (null !== $id) {
+            $sector   = (string) $this->sector;
+            $password = (string) $this->password;
+
+            $str = $sector . $id . $responseDecoded->reference . $password;
+
+            $sha256Hex = hash('sha256', $str);
+
+            $signature = base64_encode($sha256Hex);
+
+            $urlToRedirect = sprintf(
+                'https://test.paygine.com/webapi/custom/unicheckout/PurchaseWithLoanManager?sector=%s&id=%s&reference=%s&signature=%s',
+                $this->sector,
+                $id,
+                $responseDecoded->reference,
+                $signature,
+            );
+        }
+
+        return [simplexml_load_string((string) $response->getBody()), $urlToRedirect];
+    }
 }
